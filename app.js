@@ -623,7 +623,8 @@ document.addEventListener('DOMContentLoaded', () => {
         updateTurnBadge();
         const targetDepth = parseFloat(depthSelect ? depthSelect.value : '6');
 
-        const result = await window.workerPool.searchBestMove(game.fen(), targetDepth, Infinity, (p) => {
+        const maxSearchTimeMs = 30000; // 30s max safety limit
+        const result = await window.workerPool.searchBestMove(game.fen(), targetDepth, maxSearchTimeMs, (p) => {
             statNodes.textContent = p.nodes.toLocaleString();
             statTime.textContent = `${p.timeMs} ms`;
             statNps.textContent = `${(p.nps / 1000).toFixed(1)} kN/s`;
@@ -767,7 +768,8 @@ document.addEventListener('DOMContentLoaded', () => {
         findBestMoveBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> Cancelar Búsqueda';
         suggestedMoveDisplay.innerHTML = `<span class="placeholder-text"><i class="fa-solid fa-gear fa-spin"></i> Evaluando (${targetDepth} capas / ${window.workerPool.workerCount} hilos)...</span>`;
 
-        const result = await window.workerPool.searchBestMove(game.fen(), targetDepth, Infinity, (p) => {
+        const maxSearchTimeMs = 30000; // 30s max safety limit
+        const result = await window.workerPool.searchBestMove(game.fen(), targetDepth, maxSearchTimeMs, (p) => {
             statNodes.textContent = p.nodes.toLocaleString();
             statTime.textContent = `${p.timeMs} ms`;
             statNps.textContent = `${(p.nps / 1000).toFixed(1)} kN/s`;

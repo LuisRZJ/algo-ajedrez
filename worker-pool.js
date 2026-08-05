@@ -9,6 +9,12 @@ class WorkerPoolManager {
         this.isSearching = false;
         this.activeSearchId = 0;
         this.initWorkers();
+
+        // Kill all active worker threads immediately when reloading or navigating away
+        if (typeof window !== 'undefined') {
+            window.addEventListener('beforeunload', () => this.terminateAll());
+            window.addEventListener('pagehide', () => this.terminateAll());
+        }
     }
 
     initWorkers() {
