@@ -649,7 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Render Piece if present
                 const pieceObj = board[r][c];
-                const isMovable = pieceObj && (currentMode === 'setup' || pieceObj.color === game.turn());
+                const isMovable = pieceObj !== null;
 
                 if (pieceObj) {
                     squareDiv.innerHTML = getPieceSvg(pieceObj.type, pieceObj.color);
@@ -666,6 +666,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             e.dataTransfer.effectAllowed = 'move';
                             squareDiv.classList.add('dragging');
 
+                            ensurePieceTurn(pieceObj);
+
                             // Immediately select square & render legal dots at drag start!
                             if (selectedSquare !== squareSquare) {
                                 selectedSquare = squareSquare;
@@ -681,6 +683,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (e.touches.length !== 1) return;
                             const touch = e.touches[0];
                             touchSourceData = squareSquare;
+
+                            ensurePieceTurn(pieceObj);
 
                             if (selectedSquare !== squareSquare) {
                                 selectedSquare = squareSquare;
@@ -748,6 +752,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         updateTurnBadge();
+    }
+
+    /**
+     * Helper to dynamically adjust game turn to piece color when selected
+     */
+    function ensurePieceTurn(pieceObj) {
+        if (currentMode === 'play' && pieceObj && game.turn() !== pieceObj.color) {
+            const fenParts = game.fen().split(' ');
+            fenParts[1] = pieceObj.color;
+            game.load(fenParts.join(' '));
+        }
     }
 
     /**
@@ -901,8 +916,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     return;
                 } else {
-                    // Select new piece if same turn
-                    if (pieceObj && pieceObj.color === game.turn()) {
+                    // Select new piece
+                    if (pieceObj) {
+                        ensurePieceTurn(pieceObj);
                         selectedSquare = sq;
                     } else {
                         selectedSquare = null;
@@ -910,7 +926,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         } else {
-            if (pieceObj && pieceObj.color === game.turn()) {
+            if (pieceObj) {
+                ensurePieceTurn(pieceObj);
                 selectedSquare = sq;
             }
         }
