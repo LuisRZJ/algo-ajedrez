@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="16" fill="#182238"/>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="none" stroke="#6366f1" stroke-width="2" opacity="0.6"/>
+  <!-- Duolingo Style Knight Head -->
+  <g transform="translate(9.5, 9.5) scale(1.0)">
+    <!-- Base Shadow -->
+    <ellipse cx="22.5" cy="38" rx="11" ry="3.5" fill="rgba(0,0,0,0.3)"/>
+    <!-- Knight Path -->
+    <path d="M14 36v-3c0-3 1.5-5.5 4-7.5.5-2.5 0-5.5-2-7.5-2-2-1-4.5 1-6 2.5-2 6.5-2.5 10.5-.5 3 1.5 5 4 5 7.5 0 3-1.5 6.5-3.5 8.5-2 2-3 4.5-3 8.5H14z" fill="#eef6fc" stroke="#a0b6cc" stroke-width="2.5" stroke-linejoin="round"/>
+    <circle cx="20.5" cy="18.5" r="1.8" fill="#2d3748"/>
+    <path d="M15 38h14" stroke="#a0b6cc" stroke-width="2.8" stroke-linecap="round"/>
+  </g>
+  <!-- AI Sparkle Star -->
+  <path d="M48 10l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#f59e0b"/>
+</svg>

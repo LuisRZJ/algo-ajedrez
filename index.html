@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajedrez AI - Asistente de Mejor Jugada</title>
+    <!-- Favicon & PWA Manifest -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#182238">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chess.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation / Brand -->
+        <header class="app-header">
+            <div class="logo">
+                <i class="fa-solid fa-chess-knight logo-icon"></i>
+                <div class="logo-text">
+                    <h1>ChessMind <span>AI</span></h1>
+                    <p class="subtitle">Asistente de Estrategia para Piezas Blancas</p>
+                </div>
+            </div>
+            <div class="header-badges">
+                <span class="badge depth-badge" title="Seleccionar Profundidad de Búsqueda">
+                    <i class="fa-solid fa-layer-group"></i> 
+                    <select id="depthSelect" class="depth-select-inline">
+                        <option value="0.25">Prof. 0.25 (Nivel Principiante)</option>
+                        <option value="1">Prof. 1 (1 capa)</option>
+                        <option value="3">Prof. 3 (Instantánea)</option>
+                        <option value="4">Prof. 4 (Rápida - ~0.2s)</option>
+                        <option value="5">Prof. 5 (Equilibrada - ~0.8s)</option>
+                        <option value="6" selected>Prof. 6 (Profunda - ~2.5s)</option>
+                        <option value="7">Prof. 7 (Extrema - ~5s)</option>
+                    </select>
+                </span>
+                <span id="threadsBadge" class="badge threads-badge" title="Hilos de CPU en Paralelo"><i class="fa-solid fa-microchip"></i> <span id="threadsLabel">Multi-Hilo</span></span>
+                <span id="turnBadge" class="badge turn-badge"><i class="fa-solid fa-circle" style="color: #ffffff;"></i> Turno: Blancas</span>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- Left Column: Board & Setup Tools -->
+            <section class="board-section">
+                <!-- Board Toolbar -->
+                <div class="board-toolbar">
+                    <div class="mode-tabs">
+                        <button id="modePlayBtn" class="tab-btn active">
+                            <i class="fa-solid fa-play"></i> Análisis / Juego
+                        </button>
+                        <button id="autoAiToggleBtn" class="tab-btn vs-ai-btn">
+                            <i class="fa-solid fa-robot"></i> VS IA (Negras)
+                        </button>
+                        <button id="modeSetupBtn" class="tab-btn">
+                            <i class="fa-solid fa-pen-to-square"></i> Editar Tablero
+                        </button>
+                    </div>
+                    <div class="quick-actions">
+                        <button id="openApiSettingsBtn" class="action-btn api-btn" title="Configurar Google AI Studio API Key">
+                            <i class="fa-solid fa-key"></i> Clave API IA
+                        </button>
+                        <label for="imageUploadInput" class="action-btn upload-btn" title="Cargar o pegar imagen (Ctrl+V)">
+                            <i class="fa-solid fa-camera"></i> Subir / Pegar Imagen
+                            <input type="file" id="imageUploadInput" accept="image/*" style="display: none;" />
+                        </label>
+                        <button id="resetBoardBtn" class="action-btn" title="Posición Inicial">
+                            <i class="fa-solid fa-rotate-left"></i> Inicial
+                        </button>
+                        <button id="clearBoardBtn" class="action-btn danger" title="Vaciar Tablero">
+                            <i class="fa-solid fa-trash-can"></i> Vaciar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Global Drop / Paste Banner -->
+                <div id="imageDropzone" class="image-dropzone">
+                    <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+                    <span>Arrastra tu captura de pantalla aquí o presiona <strong>Ctrl + V</strong> en cualquier parte</span>
+                </div>
+
+                <!-- Piece Palette (Visible during setup mode) -->
+                <div id="piecePalette" class="piece-palette hidden">
+                    <span class="palette-title">Añadir Piezas:</span>
+                    <div class="palette-group white-pieces">
+                        <div class="palette-piece" data-piece="P" title="Peón Blanco">♙</div>
+                        <div class="palette-piece" data-piece="N" title="Caballo Blanco">♘</div>
+                        <div class="palette-piece" data-piece="B" title="Alfil Blanco">♗</div>
+                        <div class="palette-piece" data-piece="R" title="Torre Blanca">♖</div>
+                        <div class="palette-piece" data-piece="Q" title="Dama Blanca">♕</div>
+                        <div class="palette-piece" data-piece="K" title="Rey Blanco">♔</div>
+                    </div>
+                    <div class="palette-group black-pieces">
+                        <div class="palette-piece" data-piece="p" title="Peón Negro">♟</div>
+                        <div class="palette-piece" data-piece="n" title="Caballo Negro">♞</div>
+                        <div class="palette-piece" data-piece="b" title="Alfil Negro">♝</div>
+                        <div class="palette-piece" data-piece="r" title="Torre Negra">♜</div>
+                        <div class="palette-piece" data-piece="q" title="Dama Negra">♛</div>
+                        <div class="palette-piece" data-piece="k" title="Rey Negro">♚</div>
+                    </div>
+                    <div class="palette-piece eraser" data-piece="NONE" title="Borrador (Vaciar casilla)">
+                        <i class="fa-solid fa-eraser"></i>
+                    </div>
+                </div>
+
+                <!-- Chessboard Container -->
+                <div class="board-wrapper">
+                    <!-- Rank Labels (8 to 1) -->
+                    <div class="ranks-labels">
+                        <span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span>
+                    </div>
+                    
+                    <div class="board-core-area">
+                        <div id="chessboard" class="chessboard"></div>
+                        <!-- File Labels (a to h) -->
+                        <div class="files-labels">
+                            <span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Column: Control & Analysis Panel -->
+            <section class="analysis-section">
+                <!-- AI Engine Trigger Card -->
+                <div class="card trigger-card">
+                    <button id="findBestMoveBtn" class="btn-primary glow-effect">
+                        <i class="fa-solid fa-brain"></i>
+                        <span>Calcular Mejor Jugada (Prof. 6)</span>
+                    </button>
+                </div>
+
+                <!-- Best Move Result Card -->
+                <div class="card result-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-bullseye"></i> Jugada Recomendada</h2>
+                        <span id="evalBadge" class="eval-badge neutral">0.00</span>
+                    </div>
+                    <div class="result-body">
+                        <div id="suggestedMoveDisplay" class="move-display">
+                            <span class="placeholder-text">Presiona "Calcular Mejor Jugada" para obtener la recomendación.</span>
+                        </div>
+                        <div id="moveDescription" class="move-details"></div>
+                    </div>
+                </div>
+
+                <!-- Metrics & Stats -->
+                <div class="card stats-card">
+                    <h3><i class="fa-solid fa-chart-simple"></i> Estadísticas de Búsqueda</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Profundidad</span>
+                            <span class="stat-value" id="statDepth">6 plies</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Nodos Evaluados</span>
+                            <span class="stat-value" id="statNodes">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Tiempo de Cálculo</span>
+                            <span class="stat-value" id="statTime">- ms</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Velocidad</span>
+                            <span class="stat-value" id="statNps">- kN/s</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FEN Config & Import/Export -->
+                <div class="card fen-card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-code"></i> Posición FEN</h3>
+                        <button id="copyFenBtn" class="icon-btn" title="Copiar FEN"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                    <div class="fen-input-group">
+                        <input type="text" id="fenInput" class="fen-input" placeholder="Ingresa una cadena FEN válida..." />
+                        <button id="applyFenBtn" class="btn-secondary">Cargar</button>
+                    </div>
+                    <span id="fenStatus" class="fen-status"></span>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Google AI Studio API Settings Modal -->
+    <div id="apiSettingsModal" class="modal-overlay hidden">
+        <div class="modal-card modal-sm">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-key"></i> Configuración de Google AI Studio</h2>
+                <button id="closeApiSettingsModalBtn" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="apiSettingsForm" class="settings-form">
+                    <div class="form-group">
+                        <label for="apiKeyInput"><i class="fa-solid fa-lock"></i> Clave API (Google AI Studio)</label>
+                        <div class="input-with-toggle">
+                            <input type="password" id="apiKeyInput" placeholder="AIzaSy..." required />
+                            <button type="button" id="toggleApiKeyVisibility" class="icon-btn" title="Mostrar/Ocultar"><i class="fa-regular fa-eye"></i></button>
+                        </div>
+                        <small class="form-hint">Obtén tu API Key gratis en <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com</a>. Se guardará de forma segura en tu navegador (localStorage).</small>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="label-row">
+                            <label for="apiModelSelect"><i class="fa-solid fa-brain"></i> Modelo Gemini</label>
+                            <button type="button" id="fetchModelsBtn" class="icon-text-btn" title="Consultar modelos disponibles en tu cuenta de Google AI Studio">
+                                <i class="fa-solid fa-arrows-rotate"></i> Obtener Modelos Reales
+                            </button>
+                        </div>
+                        <select id="apiModelSelect" class="form-select">
+                            <option value="gemini-2.5-flash">Cargando modelos de tu cuenta...</option>
+                        </select>
+                    </div>
+
+                    <span id="apiSettingsMessage" class="form-message"></span>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelApiSettingsBtn" class="btn-secondary">Cancelar</button>
+                <button id="saveApiSettingsBtn" class="btn-primary glow-effect">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Configuración
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Recognition Verification Modal -->
+    <div id="visionModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-wand-magic-sparkles"></i> Detección de Tablero por IA</h2>
+                <button id="closeVisionModalBtn" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="side-by-side-container">
+                    <div class="side-box">
+                        <span class="box-title">Captura Original</span>
+                        <div class="img-preview-wrapper">
+                            <img id="uploadedImagePreview" src="" alt="Captura de pantalla de ajedrez" />
+                        </div>
+                        <div class="raw-response-container">
+                            <span class="box-title"><i class="fa-solid fa-code"></i> Respuesta Cruda de la IA (Gemini):</span>
+                            <textarea id="rawAiResponseText" class="raw-response-box" readonly placeholder="Esperando respuesta del modelo de IA..."></textarea>
+                        </div>
+                    </div>
+                    <div class="side-box">
+                        <span class="box-title">Posición Detectada (Haz clic en cualquier casilla para ajustar)</span>
+                        <div class="preview-board-wrapper">
+                            <div id="previewChessboard" class="chessboard mini-board"></div>
+                            <div id="previewBoardSpinner" class="board-loading-overlay hidden">
+                                <i class="fa-solid fa-brain fa-spin"></i>
+                                <span>Consultando Gemini AI...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelVisionBtn" class="btn-secondary">Cancelar</button>
+                <button id="confirmVisionBtn" class="btn-primary glow-effect">
+                    <i class="fa-solid fa-check"></i> Cargar Posición al Tablero Principal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Engine Script, Vision Script, Worker Pool & Main Script -->
+    <script src="engine.js"></script>
+    <script src="worker-pool.js"></script>
+    <script src="vision.js"></script>
+    <script src="app.js"></script>
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('[PWA] Service Worker registrado:', reg.scope))
+                    .catch(err => console.error('[PWA] Error Service Worker:', err));
+            });
+        }
+    </script>
+</body>
+</html>
