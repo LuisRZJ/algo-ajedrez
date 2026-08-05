@@ -120,6 +120,27 @@ document.addEventListener('DOMContentLoaded', () => {
         threadsLabel.textContent = `${window.workerPool.workerCount} Hilos`;
     }
 
+    // Interactive Turn Badge Listener
+    if (turnBadge) {
+        turnBadge.style.cursor = 'pointer';
+        turnBadge.setAttribute('title', 'Haz clic para alternar el turno activo (Blancas / Negras)');
+        turnBadge.addEventListener('click', () => {
+            const fenParts = game.fen().split(' ');
+            const newTurn = fenParts[1] === 'w' ? 'b' : 'w';
+            fenParts[1] = newTurn;
+            if (game.load(fenParts.join(' '))) {
+                selectedSquare = null;
+                recommendedMove = null;
+                clearAnalysisResults();
+                renderBoard();
+                showFenStatus(`Turno cambiado a ${newTurn === 'w' ? 'Blancas' : 'Negras'}`, 'success');
+                if (vsAiMode && newTurn === 'b' && !game.game_over()) {
+                    triggerAiBlackMove();
+                }
+            }
+        });
+    }
+
     // API Key & Storage Constants
     const STORAGE_KEY_API = 'gemini_api_key';
     const STORAGE_KEY_MODEL = 'gemini_model';
@@ -495,6 +516,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 const color = piece === piece.toUpperCase() ? 'w' : 'b';
                 el.innerHTML = getPieceSvg(piece, color);
             }
+            el.setAttribute('draggable', 'true');
+
+            el.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', `PALETTE:${piece}`);
+                el.classList.add('dragging');
+            });
+
+            el.addEventListener('dragend', () => {
+                el.classList.remove('dragging');
+            });
+
+            el.addEventListener('touchstart', (e) => {
+                if (e.touches.length !== 1) return;
+                const touch = e.touches[0];
+                touchSourceData = `PALETTE:${piece}`;
+                touchDragAvatar = document.createElement('div');
+                touchDragAvatar.className = 'touch-drag-preview';
+                touchDragAvatar.innerHTML = el.innerHTML;
+                touchDragAvatar.style.left = `${touch.clientX}px`;
+                touchDragAvatar.style.top = `${touch.clientY}px`;
+                document.body.appendChild(touchDragAvatar);
+            }, { passive: true });
+
             el.addEventListener('click', () => {
                 document.querySelectorAll('.palette-piece').forEach(p => p.classList.remove('active'));
                 if (selectedPalettePiece === piece) {
@@ -506,6 +550,63 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+    // Touch Drag Tracking
+    let touchDragAvatar = null;
+    let touchSourceData = null;
+    let currentTouchHoverSquare = null;
+
+    window.addEventListener('touchmove', (e) => {
+        if (!touchDragAvatar || e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        touchDragAvatar.style.left = `${touch.clientX}px`;
+        touchDragAvatar.style.top = `${touch.clientY}px`;
+
+        const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+        const squareEl = targetEl ? targetEl.closest('.square') : null;
+
+        if (currentTouchHoverSquare && currentTouchHoverSquare !== squareEl) {
+            currentTouchHoverSquare.classList.remove('drag-target-over');
+        }
+        if (squareEl) {
+            squareEl.classList.add('drag-target-over');
+            currentTouchHoverSquare = squareEl;
+        } else {
+            currentTouchHoverSquare = null;
+        }
+    }, { passive: true });
+
+    window.addEventListener('touchend', () => {
+        if (!touchDragAvatar) return;
+
+        if (currentTouchHoverSquare) {
+            currentTouchHoverSquare.classList.remove('drag-target-over');
+            const targetSq = currentTouchHoverSquare.dataset.square;
+            if (targetSq && touchSourceData) {
+                if (touchSourceData.startsWith('PALETTE:')) {
+                    const piece = touchSourceData.replace('PALETTE:', '');
+                    if (piece === 'NONE') {
+                        game.remove(targetSq);
+                    } else {
+                        const color = piece === piece.toUpperCase() ? 'w' : 'b';
+                        const type = piece.toLowerCase();
+                        game.put({ type: type, color: color }, targetSq);
+                    }
+                    renderBoard();
+                    clearAnalysisResults();
+                } else {
+                    handleMoveOrPlace(touchSourceData, targetSq);
+                }
+            }
+        }
+
+        if (touchDragAvatar && touchDragAvatar.parentNode) {
+            touchDragAvatar.parentNode.removeChild(touchDragAvatar);
+        }
+        touchDragAvatar = null;
+        touchSourceData = null;
+        currentTouchHoverSquare = null;
+    });
 
     // AI Best Move Trigger
     findBestMoveBtn.addEventListener('click', calculateBestMove);
@@ -548,11 +649,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Render Piece if present
                 const pieceObj = board[r][c];
+                const isMovable = pieceObj && (currentMode === 'setup' || pieceObj.color === game.turn());
+
                 if (pieceObj) {
                     squareDiv.innerHTML = getPieceSvg(pieceObj.type, pieceObj.color);
                     // Highlight King if in Check
                     if (game.in_check() && pieceObj.type === 'k' && pieceObj.color === game.turn()) {
                         squareDiv.classList.add('in-check');
+                    }
+
+                    if (isMovable) {
+                        squareDiv.setAttribute('draggable', 'true');
+
+                        squareDiv.addEventListener('dragstart', (e) => {
+                            e.dataTransfer.setData('text/plain', squareSquare);
+                            e.dataTransfer.effectAllowed = 'move';
+                            squareDiv.classList.add('dragging');
+
+                            // Immediately select square & render legal dots at drag start!
+                            if (selectedSquare !== squareSquare) {
+                                selectedSquare = squareSquare;
+                                renderBoard();
+                            }
+                        });
+
+                        squareDiv.addEventListener('dragend', () => {
+                            squareDiv.classList.remove('dragging');
+                        });
+
+                        squareDiv.addEventListener('touchstart', (e) => {
+                            if (e.touches.length !== 1) return;
+                            const touch = e.touches[0];
+                            touchSourceData = squareSquare;
+
+                            if (selectedSquare !== squareSquare) {
+                                selectedSquare = squareSquare;
+                                renderBoard();
+                            }
+
+                            touchDragAvatar = document.createElement('div');
+                            touchDragAvatar.className = 'touch-drag-preview';
+                            touchDragAvatar.innerHTML = getPieceSvg(pieceObj.type, pieceObj.color);
+                            touchDragAvatar.style.left = `${touch.clientX}px`;
+                            touchDragAvatar.style.top = `${touch.clientY}px`;
+                            document.body.appendChild(touchDragAvatar);
+                        }, { passive: true });
                     }
                 }
 
@@ -563,6 +704,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     squareDiv.appendChild(dot);
                 }
 
+                // Drag & Drop Target Listeners
+                squareDiv.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                });
+
+                squareDiv.addEventListener('dragenter', (e) => {
+                    e.preventDefault();
+                    squareDiv.classList.add('drag-target-over');
+                });
+
+                squareDiv.addEventListener('dragleave', () => {
+                    squareDiv.classList.remove('drag-target-over');
+                });
+
+                squareDiv.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    squareDiv.classList.remove('drag-target-over');
+                    const sourceData = e.dataTransfer.getData('text/plain');
+                    if (!sourceData) return;
+
+                    if (sourceData.startsWith('PALETTE:')) {
+                        const piece = sourceData.replace('PALETTE:', '');
+                        if (piece === 'NONE') {
+                            game.remove(squareSquare);
+                        } else {
+                            const color = piece === piece.toUpperCase() ? 'w' : 'b';
+                            const type = piece.toLowerCase();
+                            game.put({ type: type, color: color }, squareSquare);
+                        }
+                        renderBoard();
+                        clearAnalysisResults();
+                    } else {
+                        handleMoveOrPlace(sourceData, squareSquare);
+                    }
+                });
+
                 // Click event for square
                 squareDiv.addEventListener('click', () => handleSquareClick(squareSquare, pieceObj));
 
@@ -570,6 +748,44 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         updateTurnBadge();
+    }
+
+    /**
+     * Unified Move or Place handler for Drag and Drop
+     */
+    function handleMoveOrPlace(fromSq, toSq) {
+        if (!fromSq || !toSq || fromSq === toSq) return;
+
+        if (currentMode === 'setup') {
+            const sourcePiece = game.get(fromSq);
+            if (sourcePiece) {
+                game.remove(fromSq);
+                game.put({ type: sourcePiece.type, color: sourcePiece.color }, toSq);
+                selectedSquare = null;
+                renderBoard();
+                clearAnalysisResults();
+            }
+        } else {
+            const moveResult = game.move({
+                from: fromSq,
+                to: toSq,
+                promotion: 'q'
+            });
+
+            if (moveResult) {
+                selectedSquare = null;
+                recommendedMove = null;
+                clearAnalysisResults();
+                renderBoard();
+
+                if (vsAiMode && game.turn() === 'b' && !game.game_over()) {
+                    triggerAiBlackMove();
+                }
+            } else {
+                selectedSquare = null;
+                renderBoard();
+            }
+        }
     }
 
     // Toggle VS AI Mode
@@ -607,7 +823,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (turn === 'w') {
             const checkStr = isCheck ? ' — ¡EN JAQUE!' : '';
-            turnBadge.innerHTML = `<i class="fa-solid fa-circle" style="color: #ffffff;"></i> Turno: Blancas (Tú)${checkStr}`;
+            turnBadge.innerHTML = `<i class="fa-solid fa-circle" style="color: #ffffff;"></i> Turno: Blancas${checkStr}`;
             turnBadge.className = 'badge turn-badge' + (isCheck ? ' negative' : '');
         } else {
             const checkStr = isCheck ? ' — ¡EN JAQUE!' : '';
@@ -715,12 +931,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const type = selectedPalettePiece.toLowerCase();
             game.put({ type: type, color: color }, sq);
         }
-
-        // Update turn in FEN to White if needed
-        let currentFen = game.fen();
-        const fenParts = currentFen.split(' ');
-        fenParts[1] = 'w'; // Force white's turn for analysis
-        game.load(fenParts.join(' '));
 
         renderBoard();
         clearAnalysisResults();
