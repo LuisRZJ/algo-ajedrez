@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedSquare = null;
     let selectedPalettePiece = null;
     let recommendedMove = null;
+    let boardFlipped = localStorage.getItem('boardFlipped') === 'true';
 
     // Round, Modern Duolingo-Style SVG Piece Renderer
     const PIECE_SVG_TEMPLATES = {
@@ -100,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modeSetupBtn = document.getElementById('modeSetupBtn');
     const turnBadge = document.getElementById('turnBadge');
     const piecePalette = document.getElementById('piecePalette');
+    const flipBoardBtn = document.getElementById('flipBoardBtn');
     const resetBoardBtn = document.getElementById('resetBoardBtn');
     const clearBoardBtn = document.getElementById('clearBoardBtn');
     const findBestMoveBtn = document.getElementById('findBestMoveBtn');
@@ -472,6 +474,23 @@ document.addEventListener('DOMContentLoaded', () => {
     modePlayBtn.addEventListener('click', () => setMode('play'));
     modeSetupBtn.addEventListener('click', () => setMode('setup'));
 
+    // Flip Board Action
+    if (flipBoardBtn) {
+        if (boardFlipped) flipBoardBtn.classList.add('active');
+        flipBoardBtn.addEventListener('click', () => {
+            boardFlipped = !boardFlipped;
+            localStorage.setItem('boardFlipped', boardFlipped);
+            if (boardFlipped) {
+                flipBoardBtn.classList.add('active');
+                showFenStatus('Tablero girado (Vista de Negras)', 'success');
+            } else {
+                flipBoardBtn.classList.remove('active');
+                showFenStatus('Tablero girado (Vista de Blancas)', 'success');
+            }
+            renderBoard();
+        });
+    }
+
     // Reset & Clear
     resetBoardBtn.addEventListener('click', () => {
         game.reset();
@@ -619,11 +638,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const board = game.board();
         fenInput.value = game.fen();
 
+        // Update rank and file labels based on orientation
+        const ranksLabelsEl = document.getElementById('ranksLabels');
+        const filesLabelsEl = document.getElementById('filesLabels');
+
+        if (ranksLabelsEl) {
+            const ranks = boardFlipped ? ['1', '2', '3', '4', '5', '6', '7', '8'] : ['8', '7', '6', '5', '4', '3', '2', '1'];
+            ranksLabelsEl.innerHTML = ranks.map(r => `<span>${r}</span>`).join('');
+        }
+        if (filesLabelsEl) {
+            const files = boardFlipped ? ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'] : ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+            filesLabelsEl.innerHTML = files.map(f => `<span>${f}</span>`).join('');
+        }
+
         const legalMovesFromSelected = selectedSquare ? game.moves({ square: selectedSquare, verbose: true }) : [];
         const legalDestinations = legalMovesFromSelected.map(m => m.to);
 
-        for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) {
+        const rowIndices = boardFlipped ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
+        const colIndices = boardFlipped ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
+
+        for (let rIdx = 0; rIdx < 8; rIdx++) {
+            const r = rowIndices[rIdx];
+            for (let cIdx = 0; cIdx < 8; cIdx++) {
+                const c = colIndices[cIdx];
                 const file = String.fromCharCode(97 + c);
                 const rank = 8 - r;
                 const squareSquare = `${file}${rank}`;

@@ -74,6 +74,9 @@
                             <i class="fa-solid fa-camera"></i> Subir / Pegar Imagen
                             <input type="file" id="imageUploadInput" accept="image/*" style="display: none;" />
                         </label>
+                        <button id="flipBoardBtn" class="action-btn" title="Girar Tablero (180°)">
+                            <i class="fa-solid fa-repeat"></i> Girar
+                        </button>
                         <button id="resetBoardBtn" class="action-btn" title="Posición Inicial">
                             <i class="fa-solid fa-rotate-left"></i> Inicial
                         </button>
@@ -116,14 +119,14 @@
                 <!-- Chessboard Container -->
                 <div class="board-wrapper">
                     <!-- Rank Labels (8 to 1) -->
-                    <div class="ranks-labels">
+                    <div class="ranks-labels" id="ranksLabels">
                         <span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span>
                     </div>
                     
                     <div class="board-core-area">
                         <div id="chessboard" class="chessboard"></div>
                         <!-- File Labels (a to h) -->
-                        <div class="files-labels">
+                        <div class="files-labels" id="filesLabels">
                             <span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span>
                         </div>
                     </div>

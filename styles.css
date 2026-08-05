@@ -239,6 +239,13 @@ body {
     background: rgba(255, 255, 255, 0.12);
 }
 
+.action-btn.active {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: var(--primary);
+    color: #ffffff;
+    box-shadow: 0 0 12px var(--primary-glow);
+}
+
 .action-btn.danger:hover {
     background: rgba(239, 68, 68, 0.2);
     border-color: var(--accent-red);
