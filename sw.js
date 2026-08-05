@@ -3,7 +3,7 @@
  * Aggressive Network-First Strategy Falling Back to Cache
  */
 
-const CACHE_NAME = 'chessmind-pwa-v1';
+const CACHE_NAME = 'chessmind-pwa-v2';
 
 const PRECACHE_ASSETS = [
     './',
@@ -14,11 +14,11 @@ const PRECACHE_ASSETS = [
     './engine-worker.js',
     './worker-pool.js',
     './vision.js',
+    './chess.min.js',
     './favicon.svg',
     './manifest.json',
     'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap',
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-    'https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js'
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
 self.addEventListener('install', (event) => {

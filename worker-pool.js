@@ -17,6 +17,9 @@ class WorkerPoolManager {
         for (let i = 0; i < this.workerCount; i++) {
             try {
                 const w = new Worker('engine-worker.js');
+                w.onerror = (err) => {
+                    console.error(`[WorkerPool] Worker ${i} encountered an error:`, err);
+                };
                 this.workers.push(w);
             } catch (err) {
                 console.error('[WorkerPool] Error creating Web Worker:', err);
@@ -55,7 +58,7 @@ class WorkerPoolManager {
 
         const isWhite = tempGame.turn() === 'w';
 
-        // Single Worker Fallback if Workers not supported or only 1 move
+        // Single Worker or Single Thread Fallback if Workers not supported or only 1 move
         const availableWorkers = Math.min(this.workers.length, rawMoves.length);
         if (availableWorkers <= 1) {
             return new Promise((resolve) => {
@@ -80,7 +83,7 @@ class WorkerPoolManager {
                             onProgress({ nodes: totalNodes, timeMs, nps: Math.round((totalNodes / timeMs) * 1000) });
                         }
                     } else if (e.data.type === 'SEARCH_COMPLETE') {
-                        worker.removeEventListener('message', handleMsg);
+                        cleanup();
                         this.isSearching = false;
                         const finalRes = e.data.result;
                         finalRes.nps = finalRes.timeMs > 0 ? Math.round((finalRes.nodesEvaluated / finalRes.timeMs) * 1000) : 0;
@@ -88,15 +91,34 @@ class WorkerPoolManager {
                     }
                 };
 
+                const handleError = (err) => {
+                    console.error('[WorkerPool] Worker error during search, falling back to main thread engine:', err);
+                    cleanup();
+                    const res = window.chessEngine ? window.chessEngine.getBestMove(tempGame, targetDepth, maxTimeMs) : null;
+                    this.isSearching = false;
+                    resolve(res);
+                };
+
+                const cleanup = () => {
+                    worker.removeEventListener('message', handleMsg);
+                    worker.removeEventListener('error', handleError);
+                };
+
                 worker.addEventListener('message', handleMsg);
-                worker.postMessage({
-                    id: currentSearchId,
-                    task: 'SEARCH_SUBTREE',
-                    fen,
-                    assignedMoves: rawMoves,
-                    targetDepth,
-                    maxTimeMs
-                });
+                worker.addEventListener('error', handleError);
+
+                try {
+                    worker.postMessage({
+                        id: currentSearchId,
+                        task: 'SEARCH_SUBTREE',
+                        fen,
+                        assignedMoves: rawMoves,
+                        targetDepth,
+                        maxTimeMs
+                    });
+                } catch (postErr) {
+                    handleError(postErr);
+                }
             });
         }
 
@@ -112,11 +134,22 @@ class WorkerPoolManager {
         const startTime = performance.now();
 
         return new Promise((resolve) => {
+            let hasFallenBack = false;
+
+            const triggerFallback = (err) => {
+                if (hasFallenBack || this.activeSearchId !== currentSearchId) return;
+                hasFallenBack = true;
+                console.error('[WorkerPool] Worker error during parallel search, falling back to main thread engine:', err);
+                const res = window.chessEngine ? window.chessEngine.getBestMove(tempGame, targetDepth, maxTimeMs) : null;
+                this.isSearching = false;
+                resolve(res);
+            };
+
             moveBatches.forEach((batch, workerIdx) => {
                 const worker = this.workers[workerIdx];
 
                 const handleMsg = (e) => {
-                    if (this.activeSearchId !== currentSearchId) return;
+                    if (this.activeSearchId !== currentSearchId || hasFallenBack) return;
 
                     if (e.data.type === 'PROGRESS_UPDATE') {
                         totalNodesEvaluated += e.data.nodes;
@@ -130,6 +163,7 @@ class WorkerPoolManager {
                         }
                     } else if (e.data.type === 'SEARCH_COMPLETE') {
                         worker.removeEventListener('message', handleMsg);
+                        worker.removeEventListener('error', handleError);
                         results.push(e.data.result);
                         completedWorkers++;
 
@@ -176,15 +210,27 @@ class WorkerPoolManager {
                     }
                 };
 
+                const handleError = (err) => {
+                    worker.removeEventListener('message', handleMsg);
+                    worker.removeEventListener('error', handleError);
+                    triggerFallback(err);
+                };
+
                 worker.addEventListener('message', handleMsg);
-                worker.postMessage({
-                    id: currentSearchId,
-                    task: 'SEARCH_SUBTREE',
-                    fen,
-                    assignedMoves: batch,
-                    targetDepth,
-                    maxTimeMs
-                });
+                worker.addEventListener('error', handleError);
+
+                try {
+                    worker.postMessage({
+                        id: currentSearchId,
+                        task: 'SEARCH_SUBTREE',
+                        fen,
+                        assignedMoves: batch,
+                        targetDepth,
+                        maxTimeMs
+                    });
+                } catch (postErr) {
+                    triggerFallback(postErr);
+                }
             });
         });
     }

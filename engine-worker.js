@@ -2,7 +2,7 @@
  * Web Worker for Parallel Chess Engine Minimax Search
  */
 
-importScripts('https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js');
+importScripts('chess.min.js');
 
 class WorkerChessEngine {
     constructor() {
@@ -237,6 +237,10 @@ class WorkerChessEngine {
                 timeMs: Math.round(performance.now() - startTime)
             };
         }
+
+        let bestMoveGlobal = null;
+        let bestEvalGlobal = isWhite ? -Infinity : Infinity;
+        let reachedDepth = 1;
 
         for (let currentDepth = 1; currentDepth <= Math.floor(targetDepth) || currentDepth <= 1; currentDepth++) {
             let bestMoveCurrent = null;
