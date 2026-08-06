@@ -280,7 +280,12 @@ class WorkerChessEngine {
                 if (beta <= alpha) break;
             }
 
-            if (timedOut) break;
+            console.log(`[Diagnostic Worker] currentDepth: ${currentDepth}, nodesEvaluated: ${this.nodesEvaluated}, timedOut: ${timedOut}, elapsed: ${(performance.now() - startTime).toFixed(2)}ms`);
+
+            if (timedOut) {
+                console.log(`[Diagnostic Worker] Loop BROKEN by timedOut === true at depth ${currentDepth}`);
+                break;
+            }
 
             if (bestMoveCurrent) {
                 bestMoveGlobal = bestMoveCurrent;
@@ -292,7 +297,10 @@ class WorkerChessEngine {
             }
 
             // Only stop if explicit maxTimeMs limit exceeded
-            if (maxTimeMs && maxTimeMs !== Infinity && performance.now() - startTime > maxTimeMs) break;
+            if (maxTimeMs && maxTimeMs !== Infinity && performance.now() - startTime > maxTimeMs) {
+                console.log(`[Diagnostic Worker] Loop BROKEN by maxTimeMs threshold at depth ${currentDepth}`);
+                break;
+            }
         }
 
         return {

@@ -13,14 +13,15 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chess.js Local -->
     <script src="chess.min.js"></script>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=26">
 </head>
 <body>
+    <div id="toastContainer" class="toast-container"></div>
     <div class="app-container">
         <!-- Sidebar Navigation / Brand -->
         <header class="app-header">
@@ -37,6 +38,7 @@
                     <select id="depthSelect" class="depth-select-inline">
                         <option value="0.25">Prof. 0.25 (Nivel Principiante)</option>
                         <option value="1">Prof. 1 (1 capa)</option>
+                        <option value="2">Prof. 2 (2 capas)</option>
                         <option value="3">Prof. 3 (Instantánea)</option>
                         <option value="4">Prof. 4 (Rápida - ~0.2s)</option>
                         <option value="5">Prof. 5 (Equilibrada - ~0.8s)</option>
@@ -65,6 +67,9 @@
                         <button id="modeSetupBtn" class="tab-btn">
                             <i class="fa-solid fa-pen-to-square"></i> Editar Tablero
                         </button>
+                        <button id="toggleProModeBtn" class="tab-btn pro-btn" title="Activar Modo PRO (Pantalla Completa F11)">
+                            <i class="fa-solid fa-expand"></i> Modo PRO
+                        </button>
                     </div>
                     <div class="quick-actions">
                         <button id="openApiSettingsBtn" class="action-btn api-btn" title="Configurar Google AI Studio API Key">
@@ -74,6 +79,9 @@
                             <i class="fa-solid fa-camera"></i> Subir / Pegar Imagen
                             <input type="file" id="imageUploadInput" accept="image/*" style="display: none;" />
                         </label>
+                        <button id="copyBoardImageBtn" class="action-btn" title="Copiar captura del tablero con sus escalas al portapapeles">
+                            <i class="fa-solid fa-camera-retro"></i> Capturar Tablero
+                        </button>
                         <button id="flipBoardBtn" class="action-btn" title="Girar Tablero (180°)">
                             <i class="fa-solid fa-repeat"></i> Girar
                         </button>
@@ -116,6 +124,16 @@
                     </div>
                 </div>
 
+                <!-- Captured Pieces Bar (Top: Opponent / Black by default) -->
+                <div id="capturedTopBar" class="captured-bar captured-top">
+                    <div class="player-info">
+                        <i class="fa-solid fa-circle player-icon" id="topPlayerIcon" style="color: #4a5568;"></i>
+                        <span class="player-name" id="topPlayerName">Negras</span>
+                    </div>
+                    <div class="captured-pieces-list" id="capturedTopList"></div>
+                    <div class="material-advantage hidden" id="capturedTopAdvantage"></div>
+                </div>
+
                 <!-- Chessboard Container -->
                 <div class="board-wrapper">
                     <!-- Rank Labels (8 to 1) -->
@@ -131,7 +149,67 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Captured Pieces Bar (Bottom: Player / White by default) -->
+                <div id="capturedBottomBar" class="captured-bar captured-bottom">
+                    <div class="player-info">
+                        <i class="fa-solid fa-circle player-icon" id="bottomPlayerIcon" style="color: #ffffff;"></i>
+                        <span class="player-name" id="bottomPlayerName">Blancas</span>
+                    </div>
+                    <div class="captured-pieces-list" id="capturedBottomList"></div>
+                    <div class="material-advantage hidden" id="capturedBottomAdvantage"></div>
+                </div>
             </section>
+
+            <!-- PRO Mode Floating Side Control Panel (Sibling of board-section) -->
+            <div id="proControlPanel" class="pro-control-panel hidden">
+                <div class="pro-panel-header">
+                    <span class="pro-badge"><i class="fa-solid fa-crown"></i> Panel PRO</span>
+                    <div class="pro-header-actions">
+                        <button id="collapseProPanelBtn" class="action-btn collapse-pro-btn" title="Ocultar Panel (H)">
+                            <i class="fa-solid fa-eye-slash"></i> Ocultar
+                        </button>
+                        <button id="exitProModeBtn" class="action-btn exit-pro-btn" title="Salir de Modo PRO (ESC)">
+                            <i class="fa-solid fa-compress"></i> Salir
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pro-analysis-box" id="proAnalysisBox">
+                    <button id="proFindBestMoveBtn" class="btn-primary glow-effect">
+                        <i class="fa-solid fa-brain"></i>
+                        <span>Calcular Mejor Jugada</span>
+                    </button>
+                </div>
+
+                <div class="pro-actions-grid">
+                    <span class="pro-section-title">Herramientas Rápidas:</span>
+                    <button id="proOpenApiSettingsBtn" class="action-btn api-btn" title="Configurar Clave API IA">
+                        <i class="fa-solid fa-key"></i> Clave API IA
+                    </button>
+                    <label for="imageUploadInput" class="action-btn upload-btn" title="Subir o pegar imagen">
+                        <i class="fa-solid fa-camera"></i> Subir Imagen
+                    </label>
+                    <button id="proCopyBoardImageBtn" class="action-btn" title="Capturar Tablero">
+                        <i class="fa-solid fa-camera-retro"></i> Capturar Tablero
+                    </button>
+                    <button id="proFlipBoardBtn" class="action-btn" title="Girar Tablero">
+                        <i class="fa-solid fa-repeat"></i> Girar
+                    </button>
+                    <button id="proResetBoardBtn" class="action-btn" title="Posición Inicial">
+                        <i class="fa-solid fa-rotate-left"></i> Posición Inicial
+                    </button>
+                    <button id="proClearBoardBtn" class="action-btn danger" title="Vaciar Tablero">
+                        <i class="fa-solid fa-trash-can"></i> Vaciar Tablero
+                    </button>
+                </div>
+            </div>
+
+            <!-- Floating Toggle Button when PRO Panel is collapsed -->
+            <button id="toggleProPanelFloatingBtn" class="pro-panel-toggle-floating hidden" title="Mostrar Panel PRO (H)">
+                <i class="fa-solid fa-sliders"></i>
+                <span>Panel PRO</span>
+            </button>
 
             <!-- Right Column: Control & Analysis Panel -->
             <section class="analysis-section">
@@ -159,15 +237,25 @@
 
                 <!-- Metrics & Stats -->
                 <div class="card stats-card">
-                    <h3><i class="fa-solid fa-chart-simple"></i> Estadísticas de Búsqueda</h3>
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-chart-simple"></i> Estadísticas de Búsqueda</h3>
+                    </div>
                     <div class="stats-grid">
                         <div class="stat-item">
                             <span class="stat-label">Profundidad</span>
                             <span class="stat-value" id="statDepth">6 plies</span>
                         </div>
                         <div class="stat-item">
+                            <span class="stat-label">Nodos Estimados</span>
+                            <span class="stat-value" id="statEstimatedNodes">~ 15.8k</span>
+                        </div>
+                        <div class="stat-item">
                             <span class="stat-label">Nodos Evaluados</span>
                             <span class="stat-value" id="statNodes">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Ramificación ($b_0$)</span>
+                            <span class="stat-value" id="statBranching">20 jugadas</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">Tiempo de Cálculo</span>
@@ -190,7 +278,6 @@
                         <input type="text" id="fenInput" class="fen-input" placeholder="Ingresa una cadena FEN válida..." />
                         <button id="applyFenBtn" class="btn-secondary">Cargar</button>
                     </div>
-                    <span id="fenStatus" class="fen-status"></span>
                 </div>
             </section>
         </main>
@@ -278,17 +365,68 @@
         </div>
     </div>
 
+    <!-- Game Over Modal Overlay -->
+    <div id="gameOverModal" class="modal-overlay hidden">
+        <div id="gameOverCard" class="modal-card game-over-card theme-victory">
+            <div class="game-over-header">
+                <div id="gameOverIconContainer" class="game-over-icon-box">
+                    <i id="gameOverIcon" class="fa-solid fa-trophy"></i>
+                </div>
+                <h2 id="gameOverTitle">¡Jaque Mate!</h2>
+                <p id="gameOverSubtitle" class="game-over-subtitle">Las piezas blancas han ganado por Jaque Mate.</p>
+            </div>
+            <div id="gameOverDetails" class="game-over-details">
+                <span><strong>Anotación:</strong> <span id="gameOverNotationText">1 - 0</span></span>
+                <span><strong>Resultado:</strong> <span id="gameOverReasonText">Jaque Mate</span></span>
+            </div>
+
+            <!-- Export PGN / FEN Section (Toggleable) -->
+            <div id="gameOverExportSection" class="game-over-export-section hidden">
+                <div class="export-group">
+                    <div class="export-header">
+                        <span><i class="fa-solid fa-file-lines"></i> Partida PGN (Formato Estándar)</span>
+                        <button id="copyPgnBtn" class="action-btn" title="Copiar PGN"><i class="fa-regular fa-copy"></i> Copiar PGN</button>
+                    </div>
+                    <textarea id="exportPgnText" class="export-textarea" readonly rows="3" placeholder="Generando PGN..."></textarea>
+                </div>
+                <div class="export-group">
+                    <div class="export-header">
+                        <span><i class="fa-solid fa-list-ol"></i> Secuencia FEN (Paso a Paso)</span>
+                        <button id="copyFenHistoryBtn" class="action-btn" title="Copiar Lista FEN"><i class="fa-regular fa-copy"></i> Copiar FENs</button>
+                    </div>
+                    <textarea id="exportFenHistoryText" class="export-textarea" readonly rows="4" placeholder="Generando secuencia FEN..."></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer flex-wrap">
+                <button id="modalInspectBtn" class="btn-secondary" title="Cerrar modal e inspeccionar tablero final">
+                    <i class="fa-solid fa-eye"></i> Tablero
+                </button>
+                <button id="modalExportToggleBtn" class="btn-secondary" title="Ver / Copiar PGN e Historial FEN paso a paso">
+                    <i class="fa-solid fa-file-export"></i> PGN / FEN
+                </button>
+                <button id="modalResetBtn" class="btn-primary glow-effect">
+                    <i class="fa-solid fa-rotate-left"></i> Nueva Partida
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Engine Script, Vision Script, Worker Pool & Main Script -->
-    <script src="engine.js"></script>
-    <script src="worker-pool.js"></script>
-    <script src="vision.js"></script>
-    <script src="app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="engine.js?v=26"></script>
+    <script src="worker-pool.js?v=26"></script>
+    <script src="vision.js?v=26"></script>
+    <script src="app.js?v=26"></script>
     <!-- PWA Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('[PWA] Service Worker registrado:', reg.scope))
+                    .then(reg => {
+                        console.log('[PWA] Service Worker registrado:', reg.scope);
+                        reg.update();
+                    })
                     .catch(err => console.error('[PWA] Error Service Worker:', err));
             });
         }

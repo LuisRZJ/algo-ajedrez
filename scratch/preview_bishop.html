@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { background: #0f172a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+  .grid { display: flex; gap: 30px; align-items: center; }
+  .box { background: #1e293b; padding: 20px; border-radius: 16px; text-align: center; border: 1px solid #334155; }
+  svg { width: 120px; height: 120px; }
+</style>
+</head>
+<body>
+  <h2>Bishop SVG Design Preview</h2>
+  <div class="grid">
+    <div class="box">
+      <h3>White Bishop</h3>
+      <svg viewBox="0 0 45 45">
+        <g>
+          <!-- Ground shadow base -->
+          <ellipse cx="22.5" cy="38.5" rx="10" ry="3" fill="rgba(0,0,0,0.15)" />
+          <!-- Pedestal Ring -->
+          <path d="M15.5 34.5 C15.5 37, 29.5 37, 29.5 34.5 Z" fill="#70889f" stroke="#a0b6cc" stroke-width="2.2" stroke-linejoin="round"/>
+          <!-- Main Bishop Mitre Body with Right Cut Notch -->
+          <path d="M22.5 10.5 C18 11.5, 11 16.5, 11 25 C11 31.5, 16 35, 22.5 35 C29 35, 34 31.5, 34 25 C34 24.5, 32.5 21, 32.5 21 L22 25 L34 27.5 C34 26, 34 25.5, 34 25 C34 16.5, 27 11.5, 22.5 10.5 Z" fill="#e6f0fa" stroke="#a0b6cc" stroke-width="2.2" stroke-linejoin="round"/>
+          <!-- Inner Shadow of Cut Mouth Notch -->
+          <path d="M32.5 21 L22 25 L34 27.5 Z" fill="#70889f" opacity="0.35" />
+          <!-- Top Ball Finial -->
+          <circle cx="22.5" cy="7.5" r="3.2" fill="#e6f0fa" stroke="#a0b6cc" stroke-width="2.2"/>
+          <!-- Top-Left Highlight Pill -->
+          <rect x="15" y="14" width="4.2" height="10" rx="2.1" transform="rotate(-35 17 19)" fill="#ffffff" opacity="0.8" />
+        </g>
+      </svg>
+    </div>
+    <div class="box">
+      <h3>Black Bishop</h3>
+      <svg viewBox="0 0 45 45">
+        <g>
+          <!-- Ground shadow base -->
+          <ellipse cx="22.5" cy="38.5" rx="10" ry="3" fill="rgba(0,0,0,0.3)" />
+          <!-- Pedestal Ring -->
+          <path d="M15.5 34.5 C15.5 37, 29.5 37, 29.5 34.5 Z" fill="#2b2f33" stroke="#373c41" stroke-width="2.2" stroke-linejoin="round"/>
+          <!-- Main Bishop Mitre Body with Right Cut Notch -->
+          <path d="M22.5 10.5 C18 11.5, 11 16.5, 11 25 C11 31.5, 16 35, 22.5 35 C29 35, 34 31.5, 34 25 C34 24.5, 32.5 21, 32.5 21 L22 25 L34 27.5 C34 26, 34 25.5, 34 25 C34 16.5, 27 11.5, 22.5 10.5 Z" fill="#52585e" stroke="#373c41" stroke-width="2.2" stroke-linejoin="round"/>
+          <!-- Inner Shadow of Cut Mouth Notch -->
+          <path d="M32.5 21 L22 25 L34 27.5 Z" fill="#2b2f33" opacity="0.45" />
+          <!-- Top Ball Finial -->
+          <circle cx="22.5" cy="7.5" r="3.2" fill="#52585e" stroke="#373c41" stroke-width="2.2"/>
+          <!-- Top-Left Highlight Pill -->
+          <rect x="15" y="14" width="4.2" height="10" rx="2.1" transform="rotate(-35 17 19)" fill="#737a82" opacity="0.8" />
+        </g>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

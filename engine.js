@@ -268,7 +268,12 @@ class ChessEngine {
                 if (beta <= alpha) break;
             }
 
-            if (timedOut) break;
+            console.log(`[Diagnostic SingleThread] currentDepth: ${currentDepth}, nodesEvaluated: ${this.nodesEvaluated}, timedOut: ${timedOut}, elapsed: ${(performance.now() - startTime).toFixed(2)}ms`);
+
+            if (timedOut) {
+                console.log(`[Diagnostic SingleThread] Loop BROKEN by timedOut === true at depth ${currentDepth}`);
+                break;
+            }
 
             if (bestMoveCurrent) {
                 bestMoveGlobal = bestMoveCurrent;
@@ -280,7 +285,10 @@ class ChessEngine {
             }
 
             // Stop if time exceeded 70% of max time limit
-            if (performance.now() - startTime > maxTimeMs * 0.75) break;
+            if (performance.now() - startTime > maxTimeMs * 0.75) {
+                console.log(`[Diagnostic SingleThread] Loop BROKEN by 75% maxTimeMs threshold at depth ${currentDepth}`);
+                break;
+            }
         }
 
         const endTime = performance.now();

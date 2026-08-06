@@ -4,7 +4,7 @@
 
 class WorkerPoolManager {
     constructor() {
-        this.workerCount = Math.max(1, (navigator.hardwareConcurrency || 4) - 1);
+        this.workerCount = Math.max(1, navigator.hardwareConcurrency || 2);
         this.workers = [];
         this.isSearching = false;
         this.activeSearchId = 0;
