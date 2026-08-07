@@ -359,6 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load Saved API Settings & Initialize Board
     renderBoard();
+    updateSearchEstimates();
     initPiecePalette();
     initApiSettings();
 
@@ -1371,16 +1372,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (window.workerPool && window.workerPool.isSearching) {
             window.workerPool.cancelSearch();
-            findBestMoveBtn.disabled = false;
-            findBestMoveBtn.innerHTML = `<i class="fa-solid fa-brain"></i> Calcular Mejor Jugada`;
+            if (findBestMoveBtn) findBestMoveBtn.disabled = false;
+            if (proFindBestMoveBtn) proFindBestMoveBtn.disabled = false;
+            updateSearchEstimates();
             suggestedMoveDisplay.innerHTML = '<span class="placeholder-text">Búsqueda cancelada por el usuario.</span>';
             return;
         }
 
         const targetDepth = parseFloat(depthSelect ? depthSelect.value : '6');
 
-        findBestMoveBtn.disabled = false;
-        findBestMoveBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> Cancelar Búsqueda';
+        if (findBestMoveBtn) {
+            findBestMoveBtn.disabled = false;
+            findBestMoveBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> <span>Cancelar Búsqueda</span>';
+        }
+        if (proFindBestMoveBtn) {
+            proFindBestMoveBtn.disabled = false;
+            proFindBestMoveBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> <span>Cancelar Búsqueda</span>';
+        }
+
         const threadsCount = window.workerPool ? window.workerPool.workerCount : 1;
         const threadText = threadsCount === 1 ? 'hilo' : 'hilos';
         suggestedMoveDisplay.innerHTML = `<span class="placeholder-text"><i class="fa-solid fa-gear fa-spin"></i> Evaluando (${targetDepth} capas / ${threadsCount} ${threadText})...</span>`;
@@ -1392,7 +1401,7 @@ document.addEventListener('DOMContentLoaded', () => {
             statNps.textContent = `${(p.nps / 1000).toFixed(1)} kN/s`;
         });
 
-        findBestMoveBtn.innerHTML = `<i class="fa-solid fa-brain"></i> Calcular Mejor Jugada`;
+        updateSearchEstimates();
 
         if (!result || !result.bestMove) {
             suggestedMoveDisplay.innerHTML = '<span class="placeholder-text">No hay movimientos legales disponibles.</span>';
@@ -1459,6 +1468,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (statDepth) statDepth.textContent = `${d} plies`;
         if (statEstimatedNodes) statEstimatedNodes.textContent = `~ ${formatNumberAbbrev(estNodes)}`;
         if (statBranching) statBranching.textContent = `${movesCount} jugadas`;
+
+        const isSearching = window.workerPool && window.workerPool.isSearching;
+        if (!isSearching) {
+            const btnHtml = `<i class="fa-solid fa-brain"></i> <span>Calcular Mejor Jugada (Prof. ${d})</span>`;
+            if (findBestMoveBtn) findBestMoveBtn.innerHTML = btnHtml;
+            if (proFindBestMoveBtn) proFindBestMoveBtn.innerHTML = btnHtml;
+        }
     }
 
     if (depthSelect) {
